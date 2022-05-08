@@ -1,10 +1,10 @@
 repository:
   name: circleci-api-orb
   description: A CircleCI orb that provides a set of commands that wrap CircleCI's API
-  homepage: circleci-api-orb
+  homepage: https://circleci.com/developer/orbs/orb/bjd2385/circleci-api
 
   # A comma-separated list of topics to set on the repository
-  topics: circleci, orb, api
+  topics: circleci, orb, api, v2
   private: true
   has_issues: true
   has_projects: false

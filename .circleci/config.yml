@@ -1,14 +1,9 @@
 version: 2.1
 
-executors:
-  default:
-    docker:
-      - image: cimg/base:stable
-
 parameters:
   workspace:
     type: string
-    default: hqo
+    default: bjd2385
 
   orb-name:
     type: string
@@ -17,6 +12,11 @@ parameters:
 orbs:
   orb-tools: circleci/orb-tools@11.1.2
   shellcheck: circleci/shellcheck@3.1.0
+
+executors:
+  default:
+    docker:
+      - image: cimg/base:stable
 
 commands:
   check_version:
@@ -35,6 +35,57 @@ jobs:
     steps:
       - check_version
 
+  autoincrement-minor-tag:
+    executor: default
+    resource_class: small
+    steps:
+      - checkout
+      - run:
+          name: Install gh CLI
+          command: |+
+            wget https://github.com/cli/cli/releases/download/v2.9.0/gh_2.9.0_linux_amd64.deb -O gh.deb
+            sudo dpkg -i gh.deb
+      - add_ssh_keys:
+          fingerprints:
+            - "07:eb:1c:fb:ba:a5:5d:fa:71:4e:0e:5a:80:0b:9f:a8"
+      - run:
+          name: Autoincrement repository's latest tag minor version
+          command: |+
+            git fetch --all --tags
+            RES="$(git show-ref --tags)"
+            if [ -z "$RES" ]; then
+                NEW_TAG="v1.0.0"
+            else
+                mapfile -d " " -t LATEST_TAG < <(git tag | sort -V | tail -1 | sed 's/\./ /g')
+                if [ "${#LATEST_TAG[@]}" -ne 3 ]; then
+                    printf "Must follow semver convention /v?[0-9]{3}.[0-9]{3}.[0-9]{3}/ to parse.\\n" 1>&2
+                    exit 1
+                fi
+                one="${LATEST_TAG[0]//v/}"
+                two="${LATEST_TAG[1]}"
+                three="${LATEST_TAG[2]}"
+                # Increment versions mod 1k.
+                if [ "$three" == "999" ]; then
+                    if [ "$two" == "999" ]; then
+                        three=0
+                        two=0
+                        ((one++))
+                    else
+                        ((two++))
+                        three=0
+                    fi
+                elif [ "$two" == "999" ] && [ "$three" == "999" ]; then
+                    ((one++))
+                    two=0
+                else
+                    ((three++))
+                fi
+                NEW_TAG="v${one}.${two}.${three}"
+            fi
+            git tag "$NEW_TAG"
+            git push origin "$NEW_TAG"
+            echo "$GITHUB_TOKEN" | gh auth login --with-token
+            gh release create "$NEW_TAG" --generate-notes
 workflows:
   on-tag:
     jobs:
@@ -43,14 +94,14 @@ workflows:
             branches:
               ignore: /.*/
             tags:
-              only: '/^v[0-9]+\.[0-9]+\.[0-9]+$/'
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
 
       - orb-tools/pack:
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: '/^v[0-9]+\.[0-9]+\.[0-9]+$/'
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
 
       - orb-tools/publish:
           name: publish production orb
@@ -62,13 +113,22 @@ workflows:
             - orb-tools/pack
             - check_version
           context:
+            - development
             - orb-publishing
-            - github
           filters:
             branches:
               ignore: /.*/
             tags:
-              only: '/^v[0-9]+\.[0-9]+\.[0-9]+$/'
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+  on-merge:
+    jobs:
+      # Auto-increment minor tag to kick off on-tag workflow.
+      - autoincrement-minor-tag:
+          context: github
+          filters:
+            branches:
+              only: master
 
   on-commit:
     jobs:
@@ -76,31 +136,19 @@ workflows:
       - orb-tools/lint:
           filters:
             branches:
-              ignore:
-                - master
-            tags:
-              ignore:
-                - /.*/
+              ignore: master
 
       - orb-tools/pack:
           filters:
             branches:
-              ignore:
-                - master
-            tags:
-              ignore:
-                - /.*/
+              ignore: master
 
       - shellcheck/check:
           dir: ./src/scripts
           exclude: SC2148
           filters:
             branches:
-              ignore:
-                - master
-            tags:
-              ignore:
-                - /.*/
+              ignore: master
 
       - orb-tools/publish:
           name: publish development orb
@@ -117,8 +165,4 @@ workflows:
             - github
           filters:
             branches:
-              ignore:
-                - master
-            tags:
-              ignore:
-                - /.*/
+              ignore: master

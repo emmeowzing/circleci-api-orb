@@ -5,4 +5,4 @@ parameters:
     description: Default Ubuntu 20.04 executor.
     type: string
 docker:
-  - image: 'cimg/base:<< parameters.tag >>'
+  - image: "cimg/base:<< parameters.tag >>"
