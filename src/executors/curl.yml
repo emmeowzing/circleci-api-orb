@@ -1,0 +1,8 @@
+description: Curl executor.
+parameters:
+  tag:
+    default: latest
+    description: Latest executor.
+    type: string
+docker:
+  - image: "curlimages/curl:<< parameters.tag >>"
