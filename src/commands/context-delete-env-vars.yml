@@ -1,0 +1,20 @@
+description: Delete an environment variable from a context.
+parameters:
+  env-var-name:
+    description: "The name of the environment variable. Example: POSTGRES_USER"
+    type: string
+  context-id:
+    description: ID of the context (UUID).
+    type: string
+  token:
+    description: CircleCI API token, to authenticate the request.
+    type: string
+  base-url:
+    description: CircleCI base URL to query.
+    type: string
+    default: https://circleci.com/api/v2
+steps:
+  - run:
+      description: Get a context.
+      command: |
+        curl -s -X DELETE --url "<< parameters.base-url >>/context/<< parameters.context-id >>/environment-variable/<< parameters.env-var-name >>" --header "Circle-Token: << parameters.token >>"
