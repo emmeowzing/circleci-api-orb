@@ -7,6 +7,7 @@ This orb provides a set of commands that wrap [CircleCI's API](https://circleci.
 This orb has been developed in _unpacked_ form. You may view its packed source with
 
 ```shell
+$ ./scripts/pre-pack.sh
 $ circleci orb pack src/ > orb.yml
 ```
 

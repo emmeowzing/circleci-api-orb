@@ -1,7 +1,8 @@
 description: Create or update an environment variable within a context. Returns information about the environment variable, not including its value.
 parameters:
   env-var-name:
-    description: "The name of the environment variable. Example: POSTGRES_USER"
+    description: |
+      The name of the environment variable. Example: POSTGRES_USER
     type: string
   env-var-value:
     description: The value of the environment variable.
