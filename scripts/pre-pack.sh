@@ -10,11 +10,16 @@ TYP="${2:-commands}"
 cd "$SRC/$TYP/" || exit 1
 
 for directory in *; do
-    for f in "${directory}"/*; do
-        if [ ! -f "${directory}-${f}" ]; then
-            cp "${directory}/${f}" "${directory}-${f}"
-        fi
-    done
+    if [ -n "$(ls -A "${directory}")" ]; then
+        for f in "${directory}"/*; do
+            fname="$(basename "$f")"
+            if [ ! -f "${directory}-${fname}" ]; then
+                cp "${f}" "${directory}-${fname}"
+            fi
+        done
+    else
+        printf "INFO: Ignoring '%s', module is empty.\\n" "${SRC}/${TYP}/${directory}"
+    fi
 done
 
 cd - || exit 1
