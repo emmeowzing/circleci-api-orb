@@ -18,9 +18,9 @@ for directory in *; do
                 cp "${f}" "${directory}-${fname}"
             fi
         done
-    else
+    elif [ -d "${directory}" ]; then
         printf "INFO: Ignoring '%s', module is empty.\\n" "${SRC}/${TYP}/${directory}"
     fi
 done
 
-cd - || exit 1
+cd - >/dev/null || exit 1
