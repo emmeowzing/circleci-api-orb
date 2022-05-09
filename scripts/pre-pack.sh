@@ -1,5 +1,6 @@
 #! /bin/bash
 # Reduce nested commands and jobs to files under src/commands or src/jobs so they can be packed by 'circleci orb pack src/'.
+# Allows you to group collections of commands under directories.
 
 # Directory under which prepack directories reside.
 SRC="${1:-src}"
