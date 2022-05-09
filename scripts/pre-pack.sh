@@ -10,7 +10,7 @@ TYP="${2:-commands}"
 cd "$SRC/$TYP/" || exit 1
 
 for directory in *; do
-    if [ -n "$(ls -A "${directory}")" ]; then
+    if [ -d "${directory}" ] && [ -n "$(ls -A "${directory}")" ]; then
         for f in "${directory}"/*; do
             fname="$(basename "$f")"
             if [ ! -f "${directory}-${fname}" ]; then

@@ -28,7 +28,45 @@ commands:
           name: Assert tag version is unpublished
           command: |
             [[ "$(circleci orb list << pipeline.parameters.workspace >> | grep "<< pipeline.parameters.workspace >>/<< pipeline.parameters.orb-name >>" | grep -oE "[0-9].[0-9].[0-9]")" != "${CIRCLE_TAG}" ]]
+
+  pre-pack:
+    parameters:
+      src:
+        description: Source directory.
+        default: src
+        type: string
+      type:
+        description: Either 'commands' or 'jobs' to pre-pack and restructure.
+        type: enum
+        enum: [commands, jobs]
+        default: commands
+    steps:
+      - run:
+          name: Pre-pack orb src
+          command: ./scripts/pre-pack.sh "<< parameters.src >>" "<< parameters.type >>"
+
 jobs:
+  checkout:
+    parameters:
+      src:
+        description: Source directory.
+        default: src
+        type: string
+    executor: default
+    resource_class: small
+    steps:
+      - checkout
+      - pre-pack:
+          src: << parameters.src >>
+          type: commands
+      - pre-pack:
+          src: << parameters.src >>
+          type: jobs
+      - persist_to_workspace:
+          root: .
+          paths:
+            - << parameters.src >>
+
   check_version:
     executor: default
     resource_class: small
@@ -86,6 +124,7 @@ jobs:
             git push origin "$NEW_TAG"
             echo "$GITHUB_TOKEN" | gh auth login --with-token
             gh release create "$NEW_TAG" --generate-notes
+
 workflows:
   on-tag:
     jobs:
@@ -95,6 +134,8 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+      - checkout
 
       - orb-tools/pack:
           filters:
@@ -133,6 +174,8 @@ workflows:
   on-commit:
     jobs:
       # Run a bunch of tests against this repo
+      - checkout
+
       - orb-tools/lint:
           filters:
             branches:
