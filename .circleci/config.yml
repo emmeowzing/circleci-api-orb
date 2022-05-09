@@ -46,7 +46,7 @@ commands:
           command: ./scripts/pre-pack.sh "<< parameters.src >>" "<< parameters.type >>"
 
 jobs:
-  checkout:
+  checkout_source:
     parameters:
       src:
         description: Source directory.
@@ -135,7 +135,7 @@ workflows:
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
 
-      - checkout
+      - checkout_source
 
       - orb-tools/pack:
           filters:
@@ -174,7 +174,7 @@ workflows:
   on-commit:
     jobs:
       # Run a bunch of tests against this repo
-      - checkout
+      - checkout_source
 
       - orb-tools/lint:
           filters:
