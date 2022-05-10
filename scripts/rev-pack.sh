@@ -2,11 +2,16 @@
 # Reverse operation of pre-pack.sh. If files exist with a prefix that matches a directory name, they'll be moved under 
 # that directory, and the prefix removed.
 
+# shellcheck disable=SC2216
+
 # Directory under which revpack directories reside.
 SRC="${1:-src}"
 
 # The subdirectory to revpack.
 TYP="${2:-commands}"
+
+# Force deletion of files even if checksums (i.e. their contents) don't match.
+FORCE="${3:-false}"
 
 rev-pack()
 {
@@ -21,9 +26,11 @@ rev-pack()
             fname="${f##"$subdir"-}"
             # Only remove the file if it has an exact matching counterpart in the subdirectory.
             if [ -f "${subdir}/${fname}" ]; then
-                if [ "$(md5sum "$f" | awk '{ print $1 }')" = "$(md5sum "${subdir}/${fname}" | awk '{ print $1 }')" ]; then
-                    printf "Removing '%s'.\\n" "$f"
-                    # shellcheck disable=SC2216
+                if [ "$FORCE" != true ] && [ "$(md5sum "$f" | awk '{ print $1 }')" = "$(md5sum "${subdir}/${fname}" | awk '{ print $1 }')" ]; then
+                    printf "Checksums match, removing '%s'.\\n" "$f"
+                    yes | rm "$f"
+                elif [ "$FORCE" = true ]; then
+                    printf "Skipping checksum and removing '%s'.\\n" "$f"
                     yes | rm "$f"
                 else
                     printf "'%s' exists in '%s', but checksums don't match. Skipping removal.\\n" "$fname" "$subdir"
