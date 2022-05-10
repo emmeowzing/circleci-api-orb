@@ -11,6 +11,6 @@
     "install:pre-commit-hooks": "pre-commit install --install-hooks --allow-missing-config -t pre-commit -t prepare-commit-msg",
     "orb:pack": "find src -maxdepth 1 -mindepth 1 -type d | xargs -I % basename % | xargs -I % ./scripts/pre-pack.sh src % && circleci orb pack src/ > orb.yml",
     "orb:validate": "circleci orb validate orb.yml",
-    "orb:cleanup": "yes | rm orb.yml"
+    "orb:cleanup": "find src -maxdepth 1 -mindepth 1 -type d | xargs -I % basename % | xargs -I % ./scripts/rev-pack.sh src % && yes | rm orb.yml"
   }
 }

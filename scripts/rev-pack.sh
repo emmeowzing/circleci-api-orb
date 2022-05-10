@@ -10,12 +10,13 @@ TYP="${2:-commands}"
 
 cd "$SRC/$TYP/" || exit 1
 
-find . -maxdepth 1 -mindepth 1 -type f -print0 | xargs --null -I % basename % | while read -r f; do 
+find . -maxdepth 1 -mindepth 1 -type f -print0 -not -name "^\..*$" | xargs --null -I % basename % | while read -r f; do
     subdir="$(echo "$f" | awk -F '-' '{ print $1 }')"
-    if [ -n "$(ls "$subdir")" ]; then
+    if [ -d "$subdir" ] && [ -n "$(ls "$subdir")" ]; then
         fname="${f##"$subdir"-}"
+        # Only remove the file if it has an exact matching counterpart in the subdirectory.
         if [ -f "${subdir}/${fname}" ]; then
-            if [ "$(md5sum "$f")" = "$(md5sum "${subdir}/${fname}")" ]; then
+            if [ "$(md5sum "$f" | awk '{ print $1 }')" = "$(md5sum "${subdir}/${fname}" | awk '{ print $1 }')" ]; then
                 printf "Removing '%s'.\\n" "$f"
                 # shellcheck disable=SC2216
                 yes | rm "$f"
@@ -25,8 +26,10 @@ find . -maxdepth 1 -mindepth 1 -type f -print0 | xargs --null -I % basename % | 
         else
             printf "'%s' does not exist in '%s'.\\n" "$fname" "$subdir"
         fi
+    elif [ -d "$subdir" ] && [ -z "$(ls "$subdir")" ]; then
+        printf "Skipping '%s' as the subdirectory '%s' is empty.\\n" "$f" "${subdir}/"
     else
-        printf "Skipping '%s' as the subdirectory '%s' is empty.\\n" "$f" "${subdir}/\\n"
+        :
     fi
 done
 
