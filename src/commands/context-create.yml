@@ -1,0 +1,26 @@
+description: Create a new context
+parameters:
+  context-name:
+    description: The user defined name of the context.
+    type: string
+  owner:
+    description: ID of the organization containing the context.
+    type: string
+  token:
+    description: CircleCI API token, to authenticate the request.
+    type: string
+  base-url:
+    description: CircleCI base URL to query.
+    type: string
+    default: https://circleci.com/api/v2
+steps:
+  - run:
+      description: Create a new context
+      command: |
+        curl -s -X POST --url "<< parameters.base-url >>/context" --header "Circle-Token: << parameters.token >>" -d '{
+          "name": "<< parameters.context-name >>",
+          "owner": {
+            "id": "<< parameters.owner >>",
+            "type": "organization"
+          }
+        }'

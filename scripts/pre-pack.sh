@@ -10,25 +10,28 @@ TYP="${2:-commands}"
 
 pre-pack()
 {
-    current_directory="$1"
+    local current_directory="$1"
+    local d
 
     cd "$current_directory" || exit 1
+    pwd
 
     find . -maxdepth 1 -mindepth 1 -type d -print0 | xargs --null -I % basename % | while read -r d; do
-        pre-pack "$d"
         if [ -n "$(ls "${d}")" ]; then
-            find "$d"/ -maxdepth 1 -mindepth 1 -type f -print0 | xargs --null -I % basename % | while read -r f; do
+            # Drop one level below before processing all of the files and pack those sub-subdirectories into the current subdirectory.
+            pre-pack "$d"
+            find "$d" -maxdepth 1 -mindepth 1 -type f -print0 | xargs --null -I % basename % | while read -r f; do
                 fname="$(basename "$f")"
                 if [ ! -f "${d}-${fname}" ]; then
-                    cp "${f}" "${d}-${fname}"
+                    cp "${d}/${f}" "${d}-${fname}"
                 fi
             done
-        elif [ -z "$(ls "${d}")" ]; then
-            printf "INFO: Ignoring '%s', module is empty.\\n" "${SRC}/${TYP}/${d}"
         else
-            printf "ERROR: Unhandled case.\\n" 1>&2
+            printf "INFO: Ignoring '%s', module is empty.\\n" "${SRC}/${TYP}/${d}"
         fi
     done
+
+    cd ..
 
     return 0
 }

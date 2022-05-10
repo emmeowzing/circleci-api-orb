@@ -10,7 +10,8 @@ TYP="${2:-commands}"
 
 rev-pack()
 {
-    current_directory="$1"
+    local current_directory="$1"
+    local f
 
     cd "$current_directory" || exit 1
 

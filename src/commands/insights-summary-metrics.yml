@@ -1,0 +1,30 @@
+description: |
+  Get summary metrics and trends for a project at workflow and branch level. Workflow runs going back at most 90 days are
+  included in the aggregation window. Trends are only supported upto last 30 days. Metrics are refreshed daily, and thus
+  may not include executions from the last 24 hours. Please note that Insights is not a real time financial reporting tool
+  and should not be used for credit reporting. The most up to date credit information can be found in Plan Overview in the
+  CircleCI UI.
+parameters:
+  project-slug:
+    description: |+
+      Example: gh/CircleCI-Public/api-preview-docs
+
+      Project slug in the form vcs-slug/org-name/repo-name. The / characters may be URL-escaped.
+  token:
+    description: CircleCI API token, to authenticate the request.
+    type: string
+  base-url:
+    description: CircleCI base URL to query.
+    type: string
+    default: https://circleci.com/api/v2
+steps:
+  - run:
+      description:
+      command: |
+        curl -s -X GET --url "<< parameters.base-url >>/insights/pages/" --header "Circle-Token: << parameters.token >>" -d '{
+          "name": "<< parameters.context-name >>",
+          "owner": {
+            "id": "<< parameters.owner >>",
+            "type": "organization"
+          }
+        }'
