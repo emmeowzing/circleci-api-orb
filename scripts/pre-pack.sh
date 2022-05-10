@@ -8,19 +8,29 @@ SRC="${1:-src}"
 # The subdirectory to prepack.
 TYP="${2:-commands}"
 
-cd "$SRC/$TYP/" || exit 1
+pre-pack()
+{
+    current_directory="$1"
 
-for directory in *; do
-    if [ -d "${directory}" ] && [ -n "$(ls "${directory}")" ]; then
-        for f in "${directory}"/*; do
-            fname="$(basename "$f")"
-            if [ ! -f "${directory}-${fname}" ]; then
-                cp "${f}" "${directory}-${fname}"
-            fi
-        done
-    elif [ -d "${directory}" ]; then
-        printf "INFO: Ignoring '%s', module is empty.\\n" "${SRC}/${TYP}/${directory}"
-    fi
-done
+    cd "$current_directory" || exit 1
 
-cd - >/dev/null || exit 1
+    find . -maxdepth 1 -mindepth 1 -type d -print0 | xargs --null -I % basename % | while read -r d; do
+        pre-pack "$d"
+        if [ -n "$(ls "${d}")" ]; then
+            find "$d"/ -maxdepth 1 -mindepth 1 -type f -print0 | xargs --null -I % basename % | while read -r f; do
+                fname="$(basename "$f")"
+                if [ ! -f "${d}-${fname}" ]; then
+                    cp "${f}" "${d}-${fname}"
+                fi
+            done
+        elif [ -z "$(ls "${d}")" ]; then
+            printf "INFO: Ignoring '%s', module is empty.\\n" "${SRC}/${TYP}/${d}"
+        else
+            printf "ERROR: Unhandled case.\\n" 1>&2
+        fi
+    done
+
+    return 0
+}
+
+pre-pack "$SRC/$TYP/"
