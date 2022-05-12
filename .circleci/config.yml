@@ -105,7 +105,7 @@ jobs:
       - run:
           name: Pack orb
           command: |
-            find << parameters.source-dir >> -type d -depth 1 | xargs basename | xargs -I % ./scripts/pre-pack.sh src %
+            find << parameters.source-dir >> -type d -maxdepth 1 -mindepth 1 | xargs basename | xargs -I % ./scripts/pre-pack.sh src %
             mkdir -p << parameters.output-dir >>
             circleci orb pack --skip-update-check << parameters.source-dir >> > << parameters.output-dir >>/orb.yml
       - persist_to_workspace:
