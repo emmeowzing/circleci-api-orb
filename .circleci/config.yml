@@ -29,44 +29,7 @@ commands:
           command: |
             [[ "$(circleci orb list << pipeline.parameters.workspace >> | grep "<< pipeline.parameters.workspace >>/<< pipeline.parameters.orb-name >>" | grep -oE "[0-9].[0-9].[0-9]")" != "${CIRCLE_TAG}" ]]
 
-  pre-pack:
-    parameters:
-      src:
-        description: Source directory.
-        default: src
-        type: string
-      type:
-        description: Either 'commands' or 'jobs' to pre-pack and restructure.
-        type: enum
-        enum: [commands, jobs]
-        default: commands
-    steps:
-      - run:
-          name: Pre-pack orb src
-          command: ./scripts/pre-pack.sh "<< parameters.src >>" "<< parameters.type >>"
-
 jobs:
-  checkout_source:
-    parameters:
-      src:
-        description: Source directory.
-        default: src
-        type: string
-    executor: default
-    resource_class: small
-    steps:
-      - checkout
-      - pre-pack:
-          src: << parameters.src >>
-          type: commands
-      - pre-pack:
-          src: << parameters.src >>
-          type: jobs
-      - persist_to_workspace:
-          root: .
-          paths:
-            - << parameters.src >>
-
   check_version:
     executor: default
     resource_class: small
@@ -126,19 +89,29 @@ jobs:
             gh release create "$NEW_TAG" --generate-notes
 
   pack-orb:
+    # A rewrite of CircleCI's pack step with prepacking - https://github.com/CircleCI-Public/orb-tools-orb/blob/532a5e8fba31e293978ea90a0a97b28f96f2e689/src/jobs/pack.yml#L23
     executor: default
     resource_class: small
     parameters:
-      source-directory:
+      source-dir:
         description: Directory unpacked orb source resides in.
         type: string
-        default: src
+        default: ./src
+      output-dir:
+        description: The orb output directory. The orb will be named "orb.yml" in this directory and persisted to the workspace.
+        type: string
+        default: ./dist
     steps:
       - run:
           name: Pack orb
           command: |
-            find << parameters.source-directory >> -type d -depth 1 | xargs basename | xargs -I % ./scripts/pre-pack.sh src %
-            circleci orb pack << parameters.source-directory >> > orb.yml
+            find << parameters.source-dir >> -type d -depth 1 | xargs basename | xargs -I % ./scripts/pre-pack.sh src %
+            mkdir -p << parameters.output-dir >>
+            circleci orb pack --skip-update-check << parameters.source-dir >> > << parameters.output-dir >>/orb.yml
+      - persist_to_workspace:
+          paths:
+            - orb.yml
+          root: << parameters.output-dir >>
 
 workflows:
   on-tag:
@@ -149,8 +122,6 @@ workflows:
               ignore: /.*/
             tags:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
-
-      - checkout_source
 
       - pack-orb:
           filters:
@@ -189,8 +160,6 @@ workflows:
   on-commit:
     jobs:
       # Run a bunch of tests against this repo
-      - checkout_source
-
       - orb-tools/lint:
           filters:
             branches:
